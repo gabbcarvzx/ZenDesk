@@ -22,6 +22,7 @@ export function LoginForm() {
           id="email"
           name="email"
           placeholder="voce@empresa.com"
+          required
           type="email"
         />
       </div>
@@ -32,6 +33,7 @@ export function LoginForm() {
           id="password"
           name="password"
           placeholder="Sua senha"
+          required
           type="password"
         />
       </div>

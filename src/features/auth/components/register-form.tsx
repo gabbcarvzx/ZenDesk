@@ -17,7 +17,7 @@ export function RegisterForm() {
     <form action={formAction} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="organization">Nome da organização</Label>
-        <Input id="organization" name="organization" placeholder="Clinica Exemplo" />
+        <Input id="organization" name="organization" placeholder="Clinica Exemplo" required />
       </div>
       <div className="space-y-2">
         <Label htmlFor="email">E-mail</Label>
@@ -26,6 +26,7 @@ export function RegisterForm() {
           id="email"
           name="email"
           placeholder="voce@empresa.com"
+          required
           type="email"
         />
       </div>
@@ -36,6 +37,7 @@ export function RegisterForm() {
           id="password"
           name="password"
           placeholder="Minimo de 8 caracteres"
+          required
           type="password"
         />
       </div>

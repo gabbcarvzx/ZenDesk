@@ -1,6 +1,5 @@
 "use server";
 
-import { randomUUID } from "crypto";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -10,22 +9,34 @@ import {
   createSupabaseServiceRoleClient,
   isSupabaseServiceRoleConfigured,
 } from "@/lib/supabase/service-role";
+import {
+  createOwnerWorkspaceWithSupabase,
+  deleteOwnerWorkspaceWithSupabase,
+  loginWithPassword,
+  registerOwnerAccount,
+  type AuthActionState,
+} from "@/features/auth/service";
 
-export type AuthActionState = {
-  message: string | null;
-  status: "idle" | "success" | "error";
-};
+export type { AuthActionState } from "@/features/auth/service";
 
 const loginSchema = z.object({
-  email: z.email("Informe um e-mail válido.").trim().toLowerCase(),
+  email: z.email("Informe um e-mail valido.").trim().toLowerCase(),
   password: z.string().min(1, "Informe sua senha."),
 });
 
 const registerSchema = z.object({
-  email: z.email("Informe um e-mail válido.").trim().toLowerCase(),
-  organization: z.string().trim().min(2, "Informe o nome do negócio.").max(120),
-  password: z.string().min(8, "A senha precisa ter no mínimo 8 caracteres."),
+  email: z.email("Informe um e-mail valido.").trim().toLowerCase(),
+  organization: z.string().trim().min(2, "Informe o nome do negocio.").max(120),
+  password: z.string().min(8, "A senha precisa ter no minimo 8 caracteres."),
 });
+
+type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
+
+type ActiveProfileRow = {
+  id: string;
+  organizations: { id: string; status: string } | { id: string; status: string }[] | null;
+  status: string;
+};
 
 export async function loginAction(
   _previousState: AuthActionState,
@@ -33,7 +44,7 @@ export async function loginAction(
 ): Promise<AuthActionState> {
   if (!isSupabaseConfigured()) {
     return {
-      message: "Supabase não está configurado neste ambiente.",
+      message: "Supabase nao esta configurado neste ambiente.",
       status: "error",
     };
   }
@@ -51,11 +62,25 @@ export async function loginAction(
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const result = await loginWithPassword(parsed.data, {
+    getTenantProfile: () => hasActiveTenantProfile(supabase),
+    logError: logAuthError,
+    signIn: async (input) => {
+      const { error } = await supabase.auth.signInWithPassword(input);
 
-  if (error) {
+      return {
+        error,
+        ok: !error,
+      };
+    },
+    signOut: async () => {
+      await supabase.auth.signOut();
+    },
+  });
+
+  if (!result.ok) {
     return {
-      message: "Não foi possível entrar. Verifique e-mail e senha.",
+      message: result.message,
       status: "error",
     };
   }
@@ -89,37 +114,55 @@ export async function registerAction(
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.signUp({
+  const serviceSupabase = createSupabaseServiceRoleClient();
+  const registerInput = {
     email: parsed.data.email,
+    organizationName: parsed.data.organization,
     password: parsed.data.password,
+  };
+  const result = await registerOwnerAccount(registerInput, {
+    createAuthUser: async (input) => {
+      const { data, error } = await serviceSupabase.auth.admin.createUser({
+        email: input.email,
+        email_confirm: true,
+        password: input.password,
+        user_metadata: {
+          organizationName: input.organizationName,
+          source: "self_service_registration",
+        },
+      });
+
+      return {
+        error,
+        userId: data.user?.id ?? null,
+      };
+    },
+    createOwnerWorkspace: (input) =>
+      createOwnerWorkspaceWithSupabase(serviceSupabase, input),
+    deleteAuthUser: async (userId) => {
+      const { error } = await serviceSupabase.auth.admin.deleteUser(userId);
+
+      if (error) {
+        throw error;
+      }
+    },
+    deleteOwnerWorkspace: (workspace) =>
+      deleteOwnerWorkspaceWithSupabase(serviceSupabase, workspace),
+    logError: logAuthError,
+    signIn: async (input) => {
+      const { error } = await supabase.auth.signInWithPassword(input);
+
+      return {
+        error,
+        ok: !error,
+      };
+    },
   });
 
-  if (error || !data.user) {
+  if (!result.ok) {
     return {
-      message: "Não foi possível criar a conta. Verifique os dados e tente novamente.",
+      message: result.message,
       status: "error",
-    };
-  }
-
-  try {
-    await ensureOwnerOrganization({
-      email: parsed.data.email,
-      organizationName: parsed.data.organization,
-      userId: data.user.id,
-    });
-  } catch {
-    return {
-      message:
-        "Conta criada, mas não foi possível preparar a organização. Fale com o suporte antes de continuar.",
-      status: "error",
-    };
-  }
-
-  if (!data.session) {
-    return {
-      message:
-        "Conta criada. Confirme seu e-mail e depois entre usando suas credenciais.",
-      status: "success",
     };
   }
 
@@ -135,73 +178,30 @@ export async function logoutAction() {
   redirect(routes.login);
 }
 
-async function ensureOwnerOrganization({
-  email,
-  organizationName,
-  userId,
-}: {
-  email: string;
-  organizationName: string;
-  userId: string;
-}) {
-  const serviceSupabase = createSupabaseServiceRoleClient();
-  const { data: existingProfile, error: profileError } = await serviceSupabase
+async function hasActiveTenantProfile(supabase: SupabaseServerClient) {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !userData.user) {
+    return false;
+  }
+
+  const { data, error } = await supabase
     .from("profiles")
-    .select("id")
-    .eq("user_id", userId)
+    .select("id,status,organizations:organization_id(id,status)")
+    .eq("user_id", userData.user.id)
+    .eq("status", "active")
     .maybeSingle();
 
-  if (profileError) {
-    throw profileError;
+  if (error || !data) {
+    return false;
   }
 
-  if (existingProfile) {
-    return;
-  }
+  const profile = data as unknown as ActiveProfileRow;
+  const organization = Array.isArray(profile.organizations)
+    ? profile.organizations[0]
+    : profile.organizations;
 
-  const organizationSlug = `${slugify(organizationName)}-${randomUUID().slice(0, 8)}`;
-  const { data: organization, error: organizationError } = await serviceSupabase
-    .from("organizations")
-    .insert({
-      name: organizationName,
-      owner_user_id: userId,
-      plan_slug: "starter",
-      slug: organizationSlug,
-      status: "active",
-    })
-    .select("id")
-    .single();
-
-  if (organizationError) {
-    throw organizationError;
-  }
-
-  const organizationId = (organization as { id: string }).id;
-  const { error: profileInsertError } = await serviceSupabase.from("profiles").insert({
-    full_name: getNameFromEmail(email),
-    organization_id: organizationId,
-    role: "owner",
-    status: "active",
-    user_id: userId,
-  });
-
-  if (profileInsertError) {
-    throw profileInsertError;
-  }
-
-  const { error: settingsError } = await serviceSupabase
-    .from("business_settings")
-    .insert({
-      ai_enabled: false,
-      business_name: organizationName,
-      default_language: "pt-BR",
-      organization_id: organizationId,
-      tone_of_voice: "profissional",
-    });
-
-  if (settingsError) {
-    throw settingsError;
-  }
+  return profile.status === "active" && organization?.status === "active";
 }
 
 function getFormString(formData: FormData, field: string) {
@@ -210,18 +210,9 @@ function getFormString(formData: FormData, field: string) {
   return typeof value === "string" ? value : "";
 }
 
-function slugify(value: string) {
-  const slug = value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40);
-
-  return slug || "organizacao";
-}
-
-function getNameFromEmail(email: string) {
-  return email.split("@")[0] || "Dono";
+function logAuthError(
+  event: string,
+  data: Record<string, string | number | boolean | null | undefined> = {},
+) {
+  console.error("[auth]", event, data);
 }

@@ -107,42 +107,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Payload too large." }, { status: 413 });
   }
 
-  let body: unknown;
-
-  try {
-    const rawBody = await request.text();
-
-    if (rawBody.length > MAX_CREATE_PIX_BODY_LENGTH) {
-      return NextResponse.json({ error: "Payload too large." }, { status: 413 });
-    }
-
-    body = JSON.parse(rawBody) as unknown;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
-  }
-
-  const parsed = createPixPaymentSchema.safeParse({
-    ...(isRecord(body) ? body : {}),
-    idempotencyKey:
-      request.headers.get("idempotency-key") ??
-      request.headers.get("x-idempotency-key") ??
-      (isRecord(body) ? body.idempotencyKey : undefined),
-  });
-
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: "Invalid Pix payment payload.",
-        fieldErrors: parsed.error.flatten().fieldErrors,
-      },
-      { status: 400 },
-    );
-  }
-
   try {
     const profile = await requireOrganizationRole(["owner", "admin"]);
     const supabase = await createSupabaseServerClient();
-    const values = parsed.data;
 
     await assertCanUseFeature({
       feature: "pixPayments",
@@ -162,6 +129,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let body: unknown;
+    const rawBody = await request.text();
+
+    if (rawBody.length > MAX_CREATE_PIX_BODY_LENGTH) {
+      return NextResponse.json({ error: "Payload too large." }, { status: 413 });
+    }
+
+    try {
+      body = JSON.parse(rawBody) as unknown;
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
+    }
+
+    const parsed = createPixPaymentSchema.safeParse({
+      ...(isRecord(body) ? body : {}),
+      idempotencyKey:
+        request.headers.get("idempotency-key") ??
+        request.headers.get("x-idempotency-key") ??
+        (isRecord(body) ? body.idempotencyKey : undefined),
+    });
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          error: "Invalid Pix payment payload.",
+          fieldErrors: parsed.error.flatten().fieldErrors,
+        },
+        { status: 400 },
+      );
+    }
+
+    const values = parsed.data;
     const idempotencyKey = values.idempotencyKey ?? randomUUID();
     const existingPayment = await findPaymentByIdempotencyKey({
       idempotencyKey,

@@ -1,4 +1,4 @@
-import type { BillingPlanSlug } from "@/lib/billing/policy";
+import type { BillingPlanSlug } from "./billing/policy";
 
 export type TenantRole = "owner" | "admin" | "agent";
 
