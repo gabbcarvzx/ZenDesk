@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Mail, Phone } from "lucide-react";
+import { Mail, Phone, UsersRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { EmptyEducation } from "@/components/ui/empty-education";
 import {
   Card,
   CardContent,
@@ -31,9 +32,13 @@ export function CustomerList({
       </CardHeader>
       <CardContent>
         {customers.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border bg-surface-muted p-8 text-center text-sm text-muted">
-            Nenhum cliente encontrado.
-          </div>
+          <EmptyEducation
+            action={{ href: routes.customers, label: "Cadastrar cliente" }}
+            benefit="Clientes centralizados formam o CRM do tenant e ajudam a equipe a acompanhar historico, interesse e follow-up."
+            icon={<UsersRound aria-hidden="true" className="size-5" />}
+            title="Nenhum cliente encontrado"
+            tutorial="Comece cadastrando um cliente real com telefone. Depois, vincule conversas, agendamentos e cobrancas ao mesmo cadastro."
+          />
         ) : (
           <div className="space-y-3">
             {customers.map((customer) => {

@@ -166,7 +166,7 @@ export async function registerAction(
     };
   }
 
-  redirect(routes.dashboard);
+  redirect(routes.onboarding);
 }
 
 export async function logoutAction() {

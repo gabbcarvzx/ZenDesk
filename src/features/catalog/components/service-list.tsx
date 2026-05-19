@@ -1,8 +1,11 @@
+import { PackageOpen } from "lucide-react";
+import { EmptyEducation } from "@/components/ui/empty-education";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ServiceEditForm } from "@/features/catalog/components/service-edit-form";
 import { formatCurrency } from "@/features/catalog/schema";
 import type { CatalogService } from "@/features/catalog/types";
+import { routes } from "@/lib/routes";
 
 export function ServiceList({
   canManage,
@@ -21,7 +24,13 @@ export function ServiceList({
       </CardHeader>
       <CardContent>
         {services.length === 0 ? (
-          <EmptyState message="Nenhum servico cadastrado ainda." />
+          <EmptyEducation
+            action={{ href: routes.catalogServices, label: "Cadastrar servico" }}
+            benefit="Servicos estruturados permitem que a IA explique preco, duracao e regras antes de encaminhar para agenda."
+            icon={<PackageOpen aria-hidden="true" className="size-5" />}
+            title="Nenhum servico cadastrado"
+            tutorial="Cadastre primeiro os servicos mais procurados. Informe duracao, preco e uma descricao curta com o resultado esperado."
+          />
         ) : (
           <div className="space-y-4">
             {services.map((service) => (
@@ -63,13 +72,5 @@ export function ServiceList({
         )}
       </CardContent>
     </Card>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="rounded-lg border border-dashed border-border bg-surface-muted p-8 text-center text-sm text-muted">
-      {message}
-    </div>
   );
 }

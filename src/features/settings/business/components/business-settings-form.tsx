@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { HelpTip } from "@/components/ui/help-tip";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { saveBusinessSettingsAction } from "@/features/settings/business/actions";
 import {
@@ -62,6 +63,7 @@ export function BusinessSettingsForm({
           <Field
             disabled={isDisabled}
             error={fieldError(state.fieldErrors, "businessName")}
+            help="Use o nome que seus clientes reconhecem no WhatsApp e em cobrancas."
             label="Nome do negocio"
             name="businessName"
             placeholder="Clinica Exemplo"
@@ -72,6 +74,7 @@ export function BusinessSettingsForm({
           <Field
             disabled={isDisabled}
             error={fieldError(state.fieldErrors, "niche")}
+            help="O nicho ajuda a IA a adaptar linguagem, exemplos e proximos passos."
             label="Nicho"
             name="niche"
             placeholder="Estetica, saude, educacao, servicos locais..."
@@ -83,6 +86,7 @@ export function BusinessSettingsForm({
             className="md:col-span-2"
             disabled={isDisabled}
             error={fieldError(state.fieldErrors, "businessDescription")}
+            help="Explique o que vende, para quem atende e quais diferenciais a IA deve lembrar."
             label="Descricao do negocio"
             name="businessDescription"
             placeholder="Explique o que o negocio vende, para quem atende e quais diferenciais devem aparecer nas respostas."
@@ -94,6 +98,7 @@ export function BusinessSettingsForm({
             className="md:col-span-2"
             disabled={isDisabled}
             error={fieldError(state.fieldErrors, "address")}
+            help="Endereco pode ser usado pela IA para orientar clientes sobre localizacao."
             label="Endereco"
             name="address"
             placeholder="Rua, numero, bairro, cidade"
@@ -104,6 +109,7 @@ export function BusinessSettingsForm({
             className="md:col-span-2"
             disabled={isDisabled}
             error={fieldError(state.fieldErrors, "businessHours")}
+            help="Inclua dias, horarios especiais e excecoes para evitar promessas erradas."
             label="Horario de funcionamento"
             name="businessHours"
             placeholder="Segunda a sexta, 08:00 as 18:00. Sabado, 08:00 as 12:00."
@@ -124,7 +130,13 @@ export function BusinessSettingsForm({
         </CardHeader>
         <CardContent className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="toneOfVoice">Tom de voz da IA</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="toneOfVoice">Tom de voz da IA</Label>
+              <HelpTip>
+                Define como a IA conversa com seus clientes. Exemplo: profissional,
+                amigavel ou vendedor.
+              </HelpTip>
+            </div>
             <Select
               defaultValue={initialSettings.toneOfVoice}
               disabled={isDisabled}
@@ -142,7 +154,12 @@ export function BusinessSettingsForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="primaryLanguage">Idioma principal</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="primaryLanguage">Idioma principal</Label>
+              <HelpTip>
+                Idioma usado pela IA quando o cliente nao indicar outro idioma na conversa.
+              </HelpTip>
+            </div>
             <Select
               defaultValue={initialSettings.primaryLanguage}
               disabled={isDisabled}
@@ -163,6 +180,7 @@ export function BusinessSettingsForm({
             className="md:col-span-2"
             disabled={isDisabled}
             error={fieldError(state.fieldErrors, "importantRules")}
+            help="Regras reduzem respostas arriscadas. Ex.: nunca prometer desconto sem aprovacao."
             label="Regras importantes"
             name="importantRules"
             placeholder="Ex.: nunca prometer desconto sem aprovacao, sempre confirmar disponibilidade, nao dar orientacao medica..."
@@ -173,6 +191,7 @@ export function BusinessSettingsForm({
             className="md:col-span-2"
             disabled={isDisabled}
             error={fieldError(state.fieldErrors, "welcomeMessage")}
+            help="Mensagem inicial curta para o cliente entender que esta sendo atendido."
             label="Mensagem de boas-vindas"
             name="welcomeMessage"
             placeholder="Ola! Sou a assistente virtual da empresa. Como posso ajudar?"
@@ -184,6 +203,7 @@ export function BusinessSettingsForm({
             className="md:col-span-2"
             disabled={isDisabled}
             error={fieldError(state.fieldErrors, "humanHandoffMessage")}
+            help="Texto usado quando uma pessoa da equipe precisa assumir o atendimento."
             label="Mensagem quando humano precisa assumir"
             name="humanHandoffMessage"
             placeholder="Vou chamar uma pessoa da nossa equipe para continuar seu atendimento."
@@ -195,6 +215,7 @@ export function BusinessSettingsForm({
             className="md:col-span-2"
             disabled={isDisabled}
             error={fieldError(state.fieldErrors, "cancellationPolicy")}
+            help="Politicas claras evitam conflito sobre prazos, remarcacoes e reembolsos."
             label="Politica de cancelamento"
             name="cancellationPolicy"
             placeholder="Explique prazos, remarcacoes, multas ou regras comerciais importantes."
@@ -215,6 +236,7 @@ export function BusinessSettingsForm({
           <Field
             disabled={isDisabled}
             error={fieldError(state.fieldErrors, "instagramUrl")}
+            help="Link que a IA pode usar para direcionar clientes ao perfil oficial."
             label="Link do Instagram"
             name="instagramUrl"
             placeholder="https://instagram.com/suaempresa"
@@ -224,6 +246,7 @@ export function BusinessSettingsForm({
           <Field
             disabled={isDisabled}
             error={fieldError(state.fieldErrors, "googleMapsUrl")}
+            help="Link usado para orientar clientes sobre rota, endereco e ponto de referencia."
             label="Link do Google Maps"
             name="googleMapsUrl"
             placeholder="https://maps.google.com/..."
@@ -251,6 +274,7 @@ type FieldProps = {
   className?: string;
   disabled: boolean;
   error?: string;
+  help?: string;
   label: string;
   name: keyof BusinessSettingsFormValues;
   placeholder?: string;
@@ -263,6 +287,7 @@ function Field({
   className,
   disabled,
   error,
+  help,
   label,
   name,
   placeholder,
@@ -273,7 +298,10 @@ function Field({
   return (
     <div className={className}>
       <div className="space-y-2">
-        <Label htmlFor={name}>{label}</Label>
+        <div className="flex items-center gap-2">
+          <Label htmlFor={name}>{label}</Label>
+          {help ? <HelpTip>{help}</HelpTip> : null}
+        </div>
         {type === "textarea" ? (
           <Textarea
             defaultValue={value}

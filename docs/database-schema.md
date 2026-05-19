@@ -389,6 +389,35 @@ RLS:
 - Membros da organização leem, criam e atualizam.
 - Apenas `owner` e `admin` excluem.
 
+### onboarding_progress
+
+Progresso de implantacao guiada por organizacao.
+
+Campos principais:
+
+| Campo | Tipo | Regra |
+| --- | --- | --- |
+| id | uuid | PK |
+| organization_id | uuid | FK unica para `organizations.id` |
+| current_step | text | Etapa atual do fluxo |
+| completed_steps | text[] | Etapas concluidas |
+| payload | jsonb | Respostas do onboarding |
+| demo_mode_enabled | boolean | Ativa modo demo no treinamento |
+| completed_at | timestamptz | Preenchido ao concluir |
+| created_at | timestamptz | Default `now()` |
+| updated_at | timestamptz | Atualizado por trigger |
+
+RLS:
+
+- Membros da organizacao leem.
+- Apenas `owner` e `admin` criam ou atualizam.
+- Apenas `owner` exclui.
+
+Regra da aplicacao:
+
+- O progresso nunca recebe `organization_id` do cliente.
+- O payload nao deve armazenar tokens, secrets ou credenciais externas.
+
 ## Helpers na aplicação
 
 Helpers server-side criados:

@@ -1,8 +1,11 @@
+import { PackageOpen } from "lucide-react";
+import { EmptyEducation } from "@/components/ui/empty-education";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProductEditForm } from "@/features/catalog/components/product-edit-form";
 import { formatCurrency } from "@/features/catalog/schema";
 import type { CatalogProduct } from "@/features/catalog/types";
+import { routes } from "@/lib/routes";
 
 export function ProductList({
   canManage,
@@ -21,7 +24,13 @@ export function ProductList({
       </CardHeader>
       <CardContent>
         {products.length === 0 ? (
-          <EmptyState message="Nenhum produto cadastrado ainda." />
+          <EmptyEducation
+            action={{ href: routes.catalogProducts, label: "Cadastrar produto" }}
+            benefit="Produtos com nome, preco e descricao ajudam a IA a vender com clareza e reduzem perguntas repetidas no WhatsApp."
+            icon={<PackageOpen aria-hidden="true" className="size-5" />}
+            title="Nenhum produto cadastrado"
+            tutorial="Comece pelos itens mais vendidos. Inclua preco, categoria e uma descricao curta que um cliente leigo entenderia."
+          />
         ) : (
           <div className="space-y-4">
             {products.map((product) => (
@@ -63,13 +72,5 @@ export function ProductList({
         )}
       </CardContent>
     </Card>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="rounded-lg border border-dashed border-border bg-surface-muted p-8 text-center text-sm text-muted">
-      {message}
-    </div>
   );
 }

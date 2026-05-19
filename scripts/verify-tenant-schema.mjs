@@ -21,6 +21,7 @@ const requiredTables = [
   "payments",
   "ai_knowledge_base",
   "human_handoffs",
+  "onboarding_progress",
 ];
 
 const tenantScopedTables = requiredTables.filter(

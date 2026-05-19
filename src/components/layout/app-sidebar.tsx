@@ -4,6 +4,8 @@ import {
   Bot,
   CalendarDays,
   CreditCard,
+  GraduationCap,
+  LifeBuoy,
   LayoutDashboard,
   MessageSquareText,
   PackageOpen,
@@ -22,8 +24,20 @@ const navIcons: Record<(typeof dashboardNavigation)[number]["href"], LucideIcon>
   "/app/conversations": MessageSquareText,
   "/app/customers": UsersRound,
   "/app/dashboard": LayoutDashboard,
+  "/app/help-center": LifeBuoy,
+  "/app/training": GraduationCap,
   "/app/payments": CreditCard,
   "/app/settings/business": Settings,
+};
+
+const navTourIds: Partial<Record<(typeof dashboardNavigation)[number]["href"], string>> = {
+  "/app/ai/playground": "nav-ai",
+  "/app/conversations": "nav-conversations",
+  "/app/customers": "nav-customers",
+  "/app/dashboard": "nav-dashboard",
+  "/app/payments": "nav-payments",
+  "/app/settings/business": "nav-settings",
+  "/app/training": "nav-training",
 };
 
 export function AppSidebar({ profile }: { profile?: CurrentTenantProfile | null }) {
@@ -49,6 +63,7 @@ export function AppSidebar({ profile }: { profile?: CurrentTenantProfile | null 
           return (
             <Link
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-muted hover:text-foreground"
+              data-tour-id={navTourIds[item.href]}
               href={item.href}
               key={item.href}
             >

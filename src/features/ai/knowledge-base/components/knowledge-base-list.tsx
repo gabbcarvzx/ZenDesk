@@ -1,7 +1,10 @@
+import { BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyEducation } from "@/components/ui/empty-education";
 import { KnowledgeBaseEditForm } from "@/features/ai/knowledge-base/components/knowledge-base-edit-form";
 import type { KnowledgeBaseItem } from "@/features/ai/knowledge-base/types";
+import { routes } from "@/lib/routes";
 
 export function KnowledgeBaseList({
   canManage,
@@ -20,7 +23,13 @@ export function KnowledgeBaseList({
       </CardHeader>
       <CardContent>
         {items.length === 0 ? (
-          <EmptyState />
+          <EmptyEducation
+            action={{ href: routes.ai, label: "Cadastrar conhecimento" }}
+            benefit="A base de conhecimento evita respostas genericas e mantem regras importantes dentro do tenant."
+            icon={<BookOpen aria-hidden="true" className="size-5" />}
+            title="Nenhum conhecimento cadastrado"
+            tutorial="Comece com perguntas frequentes, politicas de cancelamento, regras de desconto e detalhes dos servicos mais vendidos."
+          />
         ) : (
           <div className="space-y-4">
             {items.map((item) => (
@@ -60,14 +69,6 @@ export function KnowledgeBaseList({
         )}
       </CardContent>
     </Card>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="rounded-lg border border-dashed border-border bg-surface-muted p-8 text-center text-sm text-muted">
-      Nenhum conhecimento cadastrado ainda.
-    </div>
   );
 }
 

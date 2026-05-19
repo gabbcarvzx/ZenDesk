@@ -10,6 +10,7 @@ export const publicNavigation = [
 
 export const dashboardNavigation = [
   { href: routes.dashboard, label: "Dashboard" },
+  { href: routes.training, label: "Treinamento" },
   { href: routes.conversations, label: "Conversas" },
   { href: routes.customers, label: "Clientes" },
   { href: routes.catalog, label: "Produtos/Servicos" },
@@ -17,4 +18,5 @@ export const dashboardNavigation = [
   { href: routes.payments, label: "Pagamentos" },
   { href: routes.aiPlayground, label: "IA" },
   { href: routes.settings, label: "Configuracoes" },
+  { href: routes.helpCenter, label: "Ajuda" },
 ] as const;

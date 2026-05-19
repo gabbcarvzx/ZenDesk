@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppTopbar } from "@/components/layout/app-topbar";
+import { ProductTourLauncher } from "@/features/training/components/product-tour-launcher";
 import type { CurrentTenantProfile } from "@/lib/tenant.server";
 
 export function AppShell({
@@ -19,6 +20,7 @@ export function AppShell({
           <main className="flex-1 overflow-x-hidden px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
             {children}
           </main>
+          <ProductTourLauncher />
         </div>
       </div>
     </div>

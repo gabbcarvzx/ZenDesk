@@ -1,5 +1,6 @@
 import { CalendarClock, Clock3, UserRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { EmptyEducation } from "@/components/ui/empty-education";
 import {
   Card,
   CardContent,
@@ -19,6 +20,7 @@ import type {
   AppointmentServiceOption,
   AppointmentViewMode,
 } from "@/features/appointments/types";
+import { routes } from "@/lib/routes";
 
 export function AppointmentsList({
   appointments,
@@ -44,9 +46,13 @@ export function AppointmentsList({
       </CardHeader>
       <CardContent>
         {appointments.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border bg-surface-muted p-8 text-center text-sm text-muted">
-            Nenhum agendamento neste periodo.
-          </div>
+          <EmptyEducation
+            action={{ href: routes.appointments, label: "Criar agendamento" }}
+            benefit="Agendamentos conectam cliente, servico e horario para evitar perda de pedidos feitos pelo WhatsApp."
+            icon={<CalendarClock aria-hidden="true" className="size-5" />}
+            title="Nenhum agendamento neste periodo"
+            tutorial="Crie um agendamento de teste com cliente e servico. Depois confira se o horario aparece corretamente por dia ou semana."
+          />
         ) : (
           <div className="space-y-4">
             {appointments.map((appointment) => (

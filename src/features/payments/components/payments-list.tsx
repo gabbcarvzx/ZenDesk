@@ -6,6 +6,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { EmptyEducation } from "@/components/ui/empty-education";
 import {
   Card,
   CardContent,
@@ -20,6 +21,7 @@ import {
 } from "@/features/payments/components/payment-badges";
 import { formatCurrency } from "@/features/payments/schema";
 import type { Payment } from "@/features/payments/types";
+import { routes } from "@/lib/routes";
 
 export function PaymentsList({ payments }: { payments: Payment[] }) {
   return (
@@ -32,9 +34,13 @@ export function PaymentsList({ payments }: { payments: Payment[] }) {
       </CardHeader>
       <CardContent>
         {payments.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border bg-surface-muted p-8 text-center text-sm text-muted">
-            Nenhuma cobranca criada ainda.
-          </div>
+          <EmptyEducation
+            action={{ href: routes.payments, label: "Criar cobranca" }}
+            benefit="Cobrancas vinculadas ao cliente transformam atendimento em receita rastreavel e reduzem conferencias manuais."
+            icon={<ReceiptText aria-hidden="true" className="size-5" />}
+            title="Nenhuma cobranca criada"
+            tutorial="Crie a primeira cobranca com cliente, valor e descricao. Para Pix automatico, confirme Mercado Pago e plano antes do go-live."
+          />
         ) : (
           <div className="space-y-4">
             {payments.map((payment) => (

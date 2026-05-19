@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Bot, MessageSquareText, UserRound } from "lucide-react";
+import { EmptyEducation } from "@/components/ui/empty-education";
 import {
   ConversationOwnerBadge,
   ConversationStatusBadge,
@@ -24,9 +25,13 @@ export function ConversationList({
 }) {
   if (!conversations.length) {
     return (
-      <div className="rounded-lg border border-dashed border-border bg-surface-muted p-8 text-center text-sm text-muted">
-        Nenhuma conversa encontrada neste filtro.
-      </div>
+      <EmptyEducation
+        action={{ href: routes.onboarding, label: "Revisar implantacao" }}
+        benefit="Conversas aparecem quando clientes entram pelo WhatsApp, web ou cadastro manual. Use este espaco para acompanhar IA e humano."
+        icon={<MessageSquareText aria-hidden="true" className="size-5" />}
+        title="Nenhuma conversa neste filtro"
+        tutorial="Antes do go-live, use o modo demo em Treinamento para mostrar a equipe como uma conversa muda de IA para humano."
+      />
     );
   }
 
