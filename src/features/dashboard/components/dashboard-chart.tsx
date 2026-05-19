@@ -5,13 +5,16 @@ type DashboardChartProps = {
 };
 
 export function DashboardChart({ data }: DashboardChartProps) {
-  const maxMessages = Math.max(...data.map((point) => point.messages));
+  const maxMessages = Math.max(1, ...data.map((point) => point.messages));
 
   return (
     <div className="h-full">
       <div className="flex h-72 items-end gap-3 rounded-lg border border-border bg-[#f8faf9] px-4 pb-4 pt-6">
         {data.map((point) => {
-          const height = Math.max(16, Math.round((point.messages / maxMessages) * 100));
+          const height =
+            point.messages > 0
+              ? Math.max(16, Math.round((point.messages / maxMessages) * 100))
+              : 2;
 
           return (
             <div className="flex h-full min-w-0 flex-1 flex-col justify-end gap-3" key={point.day}>

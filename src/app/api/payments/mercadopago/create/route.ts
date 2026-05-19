@@ -9,8 +9,13 @@ import {
   MercadoPagoRequestError,
 } from "@/lib/billing/mercadopago";
 import {
-  applyRateLimit,
+  BillingPolicyError,
+  assertCanUseFeature,
+  getBillingPolicyMessage,
+} from "@/lib/billing/policy";
+import {
   buildRateLimitKey,
+  enforceRateLimit,
   getRateLimitHeaders,
 } from "@/lib/rate-limit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -80,7 +85,7 @@ type PaymentRow = {
 };
 
 export async function POST(request: NextRequest) {
-  const rateLimit = applyRateLimit({
+  const rateLimit = await enforceRateLimit({
     key: buildRateLimitKey("mercadopago-create:post", request),
     limit: CREATE_PIX_RATE_LIMIT,
     windowMs: CREATE_PIX_RATE_LIMIT_WINDOW_MS,
@@ -95,15 +100,6 @@ export async function POST(request: NextRequest) {
         headers: getRateLimitHeaders(rateLimit),
         status: 429,
       },
-    );
-  }
-
-  if (!isMercadoPagoConfigured()) {
-    logWarn("create_pix_missing_access_token");
-
-    return NextResponse.json(
-      { error: "Mercado Pago is not configured." },
-      { status: 503 },
     );
   }
 
@@ -147,6 +143,25 @@ export async function POST(request: NextRequest) {
     const profile = await requireOrganizationRole(["owner", "admin"]);
     const supabase = await createSupabaseServerClient();
     const values = parsed.data;
+
+    await assertCanUseFeature({
+      feature: "pixPayments",
+      organizationId: profile.organizationId,
+      planSlug: profile.organization.planSlug,
+      supabase,
+    });
+
+    if (!isMercadoPagoConfigured()) {
+      logWarn("create_pix_missing_access_token", {
+        organizationId: profile.organizationId,
+      });
+
+      return NextResponse.json(
+        { error: "Mercado Pago is not configured." },
+        { status: 503 },
+      );
+    }
+
     const idempotencyKey = values.idempotencyKey ?? randomUUID();
     const existingPayment = await findPaymentByIdempotencyKey({
       idempotencyKey,
@@ -267,6 +282,15 @@ export async function POST(request: NextRequest) {
 
     if (error instanceof OrganizationAccessDeniedError) {
       return NextResponse.json({ error: "Access denied." }, { status: 403 });
+    }
+
+    if (error instanceof BillingPolicyError) {
+      return NextResponse.json(
+        {
+          error: getBillingPolicyMessage(error),
+        },
+        { status: 402 },
+      );
     }
 
     logError("create_pix_failed", {

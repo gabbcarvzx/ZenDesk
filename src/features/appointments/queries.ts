@@ -1,4 +1,5 @@
 import { isSupabaseConfigured } from "@/lib/env";
+import { checkFeatureAccess } from "@/lib/billing/policy";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentTenantProfile } from "@/lib/tenant.server";
 import {
@@ -77,6 +78,10 @@ export async function getAppointmentsPageData({
     }
 
     const supabase = await createSupabaseServerClient();
+    const canManage = checkFeatureAccess({
+      feature: "appointments",
+      planSlug: profile.organization.planSlug,
+    }).allowed;
     const [appointments, customers, services] = await Promise.all([
       getAppointments({
         organizationId: profile.organizationId,
@@ -90,7 +95,7 @@ export async function getAppointmentsPageData({
 
     return {
       appointments,
-      canManage: true,
+      canManage,
       customers,
       date,
       rangeEnd: range.end.toISOString(),

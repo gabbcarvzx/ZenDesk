@@ -1,4 +1,5 @@
 import { createAppointment } from "@/lib/appointments/create-appointment";
+import { assertCanUseFeature } from "@/lib/billing/policy";
 import { ManualPaymentProvider } from "@/lib/billing/payment-provider";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
@@ -156,6 +157,12 @@ async function createPaymentTool({
   assertSameCustomer(context, input.customerId);
   assertSameConversation(context, input.conversationId ?? null);
 
+  await assertCanUseFeature({
+    feature: "pixPayments",
+    organizationId: context.organizationId,
+    supabase,
+  });
+
   const provider = new ManualPaymentProvider();
   const providerResult = await provider.createCharge({
     amountCents: input.amountCents,
@@ -265,6 +272,12 @@ async function requestHumanTool({
   supabase: SupabaseAiClient;
 }): Promise<AiToolResult> {
   assertSameConversation(context, input.conversationId);
+
+  await assertCanUseFeature({
+    feature: "humanHandoff",
+    organizationId: context.organizationId,
+    supabase,
+  });
 
   const { data, error } = await supabase
     .from("human_handoffs")

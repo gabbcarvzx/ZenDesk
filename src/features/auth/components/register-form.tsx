@@ -1,11 +1,22 @@
+"use client";
+
+import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
+import { registerAction, type AuthActionState } from "@/features/auth/actions";
+
+const initialState: AuthActionState = {
+  message: null,
+  status: "idle",
+};
 
 export function RegisterForm() {
+  const [state, formAction, isPending] = useActionState(registerAction, initialState);
+
   return (
-    <form className="space-y-4">
+    <form action={formAction} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="organization">Nome da organizacao</Label>
+        <Label htmlFor="organization">Nome da organização</Label>
         <Input id="organization" name="organization" placeholder="Clinica Exemplo" />
       </div>
       <div className="space-y-2">
@@ -28,8 +39,19 @@ export function RegisterForm() {
           type="password"
         />
       </div>
-      <Button className="w-full" type="submit">
-        Criar conta
+      {state.message ? (
+        <p
+          className={
+            state.status === "error"
+              ? "text-sm leading-6 text-danger"
+              : "text-sm leading-6 text-primary"
+          }
+        >
+          {state.message}
+        </p>
+      ) : null}
+      <Button className="w-full" disabled={isPending} type="submit">
+        {isPending ? "Criando..." : "Criar conta"}
       </Button>
     </form>
   );

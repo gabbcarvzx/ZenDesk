@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { assertCanUseFeature } from "@/lib/billing/policy";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -60,6 +61,12 @@ export async function createAppointment(
   const serviceId = normalizeOptional(input.serviceId);
   const conversationId = normalizeOptional(input.conversationId);
   const scheduledStartAt = normalizeDate(input.scheduledStartAt, "scheduledStartAt");
+
+  await assertCanUseFeature({
+    feature: "appointments",
+    organizationId,
+    supabase,
+  });
 
   await assertCustomerBelongsToTenant(supabase, organizationId, customerId);
 

@@ -7,6 +7,8 @@ export const envKeys = {
   ],
   futureIntegrations: [
     "OPENAI_API_KEY",
+    "UPSTASH_REDIS_REST_URL",
+    "UPSTASH_REDIS_REST_TOKEN",
     "WHATSAPP_VERIFY_TOKEN",
     "WHATSAPP_ACCESS_TOKEN",
     "WHATSAPP_PHONE_NUMBER_ID",
@@ -25,6 +27,7 @@ export const productionRequiredEnvKeys = [
 export const featureEnvKeys = {
   ai: ["OPENAI_API_KEY"],
   mercadoPago: ["MERCADOPAGO_ACCESS_TOKEN", "MERCADOPAGO_WEBHOOK_SECRET"],
+  rateLimit: ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"],
   whatsapp: [
     "WHATSAPP_VERIFY_TOKEN",
     "WHATSAPP_ACCESS_TOKEN",

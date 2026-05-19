@@ -1,4 +1,5 @@
 import { isSupabaseConfigured } from "@/lib/env";
+import { checkFeatureAccess } from "@/lib/billing/policy";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentTenantProfile } from "@/lib/tenant.server";
 import { mapCustomerStatusFromRow } from "@/features/customers/schema";
@@ -85,6 +86,10 @@ export async function getCustomersPageData({
     }
 
     const supabase = await createSupabaseServerClient();
+    const canManage = checkFeatureAccess({
+      feature: "crm",
+      planSlug: profile.organization.planSlug,
+    }).allowed;
     const customers = await getCustomers({
       organizationId: profile.organizationId,
       search: normalizedSearch,
@@ -98,7 +103,7 @@ export async function getCustomersPageData({
     if (!selectedCustomer) {
       return {
         appointments: [],
-        canManage: true,
+        canManage,
         conversations: [],
         customers,
         search: normalizedSearch,
@@ -121,7 +126,7 @@ export async function getCustomersPageData({
 
     return {
       appointments,
-      canManage: true,
+      canManage,
       conversations,
       customers,
       search: normalizedSearch,

@@ -1,9 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import {
+  BillingPolicyError,
+  assertCanUseFeature,
+  getBillingPolicyMessage,
+} from "@/lib/billing/policy";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { requireCurrentOrganizationId } from "@/lib/tenant.server";
+import { requireOrganizationRole } from "@/lib/tenant.server";
 import {
   mapCustomerStatusToRow,
   parseCustomerForm,
@@ -28,9 +33,16 @@ export async function createCustomerAction(
   }
 
   return saveCustomerMutation(async () => {
-    const organizationId = await requireCurrentOrganizationId();
+    const profile = await requireOrganizationRole(["owner", "admin", "agent"]);
     const supabase = await createSupabaseServerClient();
     const values = parsed.data;
+
+    await assertCanUseFeature({
+      feature: "crm",
+      organizationId: profile.organizationId,
+      planSlug: profile.organization.planSlug,
+      supabase,
+    });
 
     const { error } = await supabase.from("customers").insert({
       email: values.email || null,
@@ -38,7 +50,7 @@ export async function createCustomerAction(
       lifecycle_status: mapCustomerStatusToRow(values.status),
       name: values.name,
       notes: values.notes || null,
-      organization_id: organizationId,
+      organization_id: profile.organizationId,
       phone: values.phone || null,
       source: values.source,
       tags: values.tags,
@@ -67,9 +79,16 @@ export async function updateCustomerAction(
   }
 
   return saveCustomerMutation(async () => {
-    const organizationId = await requireCurrentOrganizationId();
+    const profile = await requireOrganizationRole(["owner", "admin", "agent"]);
     const supabase = await createSupabaseServerClient();
     const values = parsed.data;
+
+    await assertCanUseFeature({
+      feature: "crm",
+      organizationId: profile.organizationId,
+      planSlug: profile.organization.planSlug,
+      supabase,
+    });
 
     const { error } = await supabase
       .from("customers")
@@ -84,7 +103,7 @@ export async function updateCustomerAction(
         tags: values.tags,
       })
       .eq("id", values.id)
-      .eq("organization_id", organizationId);
+      .eq("organization_id", profile.organizationId);
 
     if (error) {
       throw error;
@@ -112,7 +131,14 @@ async function saveCustomerMutation(
       message,
       status: "success",
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof BillingPolicyError) {
+      return {
+        message: getBillingPolicyMessage(error),
+        status: "error",
+      };
+    }
+
     return {
       message:
         "Nao foi possivel salvar o cliente. Verifique permissao, telefone duplicado ou dados obrigatorios.",

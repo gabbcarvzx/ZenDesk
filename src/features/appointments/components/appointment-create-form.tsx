@@ -51,6 +51,14 @@ export function AppointmentCreateForm({
             />
           </div>
         ) : null}
+        {!canManage && customers.length ? (
+          <div className="mb-4">
+            <AppointmentStatusMessage
+              message="Agendamentos estao disponiveis nos planos Pro e Business."
+              tone="info"
+            />
+          </div>
+        ) : null}
         <form action={action} className="grid gap-4 md:grid-cols-2">
           {state.message ? (
             <div className="md:col-span-2">

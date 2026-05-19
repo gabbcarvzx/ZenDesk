@@ -34,6 +34,12 @@ export default async function ConversationsPage({
       {data.loadError ? (
         <ConversationStatusMessage message={data.loadError} tone="error" />
       ) : null}
+      {!data.loadError && !data.canUseHumanHandoff ? (
+        <ConversationStatusMessage
+          message="Handoff humano e respostas manuais estao disponiveis nos planos Pro e Business."
+          tone="info"
+        />
+      ) : null}
       <ConversationsOverview conversations={data.conversations} />
       <ConversationFilters filter={data.filter} />
       <div className="grid gap-6 xl:grid-cols-[minmax(340px,0.78fr)_minmax(0,1.22fr)]">
@@ -55,7 +61,10 @@ export default async function ConversationsPage({
             </CardContent>
           </Card>
         </div>
-        <ChatPanel canManage={data.canManage} conversation={data.selectedConversation} />
+        <ChatPanel
+          canManage={data.canUseHumanHandoff}
+          conversation={data.selectedConversation}
+        />
       </div>
     </ConversationsShell>
   );

@@ -64,6 +64,13 @@ IA:
 OPENAI_API_KEY=
 ```
 
+Rate limiting distribuido recomendado:
+
+```bash
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+```
+
 WhatsApp:
 
 ```bash
@@ -105,6 +112,10 @@ https://seu-dominio.com/api/webhooks/mercadopago
 
 ## 6. Pos-deploy
 
+Antes do beta, execute tambem o checklist autenticado completo:
+
+- `docs/supabase-staging-auth-checklist.md`
+
 Rode smoke tests:
 
 1. Acesse a home e paginas publicas.
@@ -124,7 +135,7 @@ Rode smoke tests:
 
 ## 8. Riscos residuais conhecidos
 
-- Rate limiting atual e em memoria por instancia. Para alto volume, configurar limitador distribuido.
+- Sem `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN`, o rate limit volta para memoria por instancia.
 - CSP restritiva ainda nao esta ativa.
 - Observabilidade e alertas precisam ser conectados antes de escala comercial.
-- Plano/assinatura e bloqueio por billing ainda sao etapas de produto pendentes.
+- Status de assinatura/trial ainda precisa ser acoplado ao billing antes de clientes pagantes em escala.

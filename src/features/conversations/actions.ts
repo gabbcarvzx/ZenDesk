@@ -1,6 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import {
+  BillingPolicyError,
+  assertCanUseFeature,
+  getBillingPolicyMessage,
+} from "@/lib/billing/policy";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireOrganizationRole } from "@/lib/tenant.server";
@@ -125,6 +130,13 @@ export async function sendManualReplyAction(
     );
     const now = new Date().toISOString();
 
+    await assertCanUseFeature({
+      feature: "humanHandoff",
+      organizationId: profile.organizationId,
+      planSlug: profile.organization.planSlug,
+      supabase,
+    });
+
     const { error: messageError } = await supabase.from("messages").insert({
       body: parsed.data.message,
       conversation_id: conversation.id,
@@ -184,6 +196,14 @@ export async function assumeConversationAction(formData: FormData): Promise<void
       profile.organizationId,
       parsed.data.conversationId,
     );
+
+    await assertCanUseFeature({
+      feature: "humanHandoff",
+      organizationId: profile.organizationId,
+      planSlug: profile.organization.planSlug,
+      supabase,
+    });
+
     const activeHandoff = await getActiveHandoff(
       supabase,
       profile.organizationId,
@@ -303,7 +323,14 @@ async function saveConversationMutation(
       message,
       status: "success",
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof BillingPolicyError) {
+      return {
+        message: getBillingPolicyMessage(error),
+        status: "error",
+      };
+    }
+
     return {
       message:
         "Nao foi possivel salvar. Verifique permissao, tenant ativo e dados obrigatorios.",

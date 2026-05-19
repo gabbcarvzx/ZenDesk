@@ -13,6 +13,7 @@ import {
 import { BrandLogo } from "@/components/brand-logo";
 import { Badge } from "@/components/ui/badge";
 import { dashboardNavigation } from "@/lib/navigation";
+import type { CurrentTenantProfile } from "@/lib/tenant.server";
 
 const navIcons: Record<(typeof dashboardNavigation)[number]["href"], LucideIcon> = {
   "/app/ai/playground": Bot,
@@ -25,17 +26,20 @@ const navIcons: Record<(typeof dashboardNavigation)[number]["href"], LucideIcon>
   "/app/settings/business": Settings,
 };
 
-export function AppSidebar() {
+export function AppSidebar({ profile }: { profile?: CurrentTenantProfile | null }) {
+  const organizationName = profile?.organization.name ?? "Ambiente local";
+  const roleLabel = profile ? getRoleLabel(profile.role) : "Sem sessão";
+
   return (
     <aside className="hidden w-72 shrink-0 border-r border-border bg-surface px-5 py-6 lg:flex lg:flex-col">
       <BrandLogo />
       <div className="mt-8 rounded-lg border border-border bg-surface-muted p-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-          Organizacao ativa
+        <p className="text-xs font-semibold uppercase text-primary">
+          Organização ativa
         </p>
-        <p className="mt-2 text-sm font-semibold text-foreground">Clinica Exemplo</p>
+        <p className="mt-2 text-sm font-semibold text-foreground">{organizationName}</p>
         <div className="mt-3">
-          <Badge>Trial seguro</Badge>
+          <Badge>{roleLabel}</Badge>
         </div>
       </div>
       <nav className="mt-8 flex flex-1 flex-col gap-1">
@@ -57,9 +61,19 @@ export function AppSidebar() {
       <div className="rounded-lg border border-border p-4">
         <p className="text-sm font-semibold text-foreground">Isolamento por tenant</p>
         <p className="mt-2 text-sm leading-6 text-muted">
-          Todos os modulos futuros devem filtrar dados por organization_id.
+          Todas as áreas operacionais filtram dados por organização no servidor.
         </p>
       </div>
     </aside>
   );
+}
+
+function getRoleLabel(role: CurrentTenantProfile["role"]) {
+  const labels: Record<CurrentTenantProfile["role"], string> = {
+    admin: "Admin",
+    agent: "Atendente",
+    owner: "Dono",
+  };
+
+  return labels[role];
 }

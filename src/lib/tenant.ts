@@ -1,3 +1,5 @@
+import type { BillingPlanSlug } from "@/lib/billing/policy";
+
 export type TenantRole = "owner" | "admin" | "agent";
 
 export type ProfileStatus = "active" | "invited" | "removed";
@@ -7,6 +9,7 @@ export type OrganizationStatus = "active" | "suspended" | "deleted";
 export type ActiveOrganization = {
   id: string;
   name: string;
+  planSlug: BillingPlanSlug;
   slug: string;
   role: TenantRole;
   status: OrganizationStatus;

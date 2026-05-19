@@ -94,6 +94,7 @@ Mapeamento inicial:
 - O corpo bruto do webhook nao e logado.
 - A criacao Pix e o webhook aplicam rate limit basico por origem.
 - A criacao exige usuario autenticado com papel `owner` ou `admin`.
+- A criacao exige plano com recurso `pixPayments` liberado na policy central de billing.
 - O webhook usa service role apenas no servidor, pois chamadas externas nao possuem sessao de usuario.
 - Toda gravacao em `payments` continua usando `organization_id`.
 
@@ -101,4 +102,4 @@ Mapeamento inicial:
 
 - Apenas Pix esta implementado.
 - O QR Code base64 e salvo em metadata para permitir replay idempotente; em escala maior, pode ser movido para storage/cache.
-- A UI de pagamentos ainda nao chama esta rota diretamente.
+- A UI de pagamentos chama `POST /api/payments/mercadopago/create` diretamente para gerar link/QR Code.

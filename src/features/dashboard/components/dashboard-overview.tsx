@@ -14,16 +14,15 @@ export function DashboardOverview({ dashboard }: DashboardOverviewProps) {
       <section className="rounded-lg border border-border bg-surface px-5 py-5 shadow-sm">
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">
+            <p className="text-sm font-semibold uppercase text-primary">
               {dashboard.organizationName}
             </p>
             <h2 className="mt-2 text-2xl font-semibold text-foreground">
-              Visao geral da operacao
+              Visão geral da operação
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-              Indicadores mockados para atendimento, vendas, agenda e cobranca. A camada
-              getDashboardOverview ja esta isolada para trocar por consultas Supabase
-              filtradas por organization_id.
+              Indicadores operacionais para acompanhar atendimento, vendas, agenda,
+              cobrança e necessidade de intervenção humana por organização.
             </p>
           </div>
           <div className="rounded-md border border-border bg-surface-muted px-3 py-2 text-sm font-semibold text-foreground">

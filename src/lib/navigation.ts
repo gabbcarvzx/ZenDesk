@@ -1,8 +1,11 @@
 import { routes } from "@/lib/routes";
 
 export const publicNavigation = [
-  { href: routes.home, label: "Home" },
-  { href: routes.pricing, label: "Precos" },
+  { href: "/#problema", label: "Problema" },
+  { href: "/#como-funciona", label: "Como funciona" },
+  { href: "/#painel", label: "Painel" },
+  { href: routes.pricing, label: "Planos" },
+  { href: "/#faq", label: "FAQ" },
 ] as const;
 
 export const dashboardNavigation = [

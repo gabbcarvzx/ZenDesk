@@ -34,7 +34,7 @@ export function CustomerCreateForm({ canManage }: { canManage: boolean }) {
         {!canManage ? (
           <div className="mb-4">
             <CustomerStatusMessage
-              message="Entre com uma conta vinculada a uma organizacao para cadastrar clientes."
+              message="CRM com cadastro e edicao manual esta disponivel nos planos Pro e Business."
               tone="info"
             />
           </div>

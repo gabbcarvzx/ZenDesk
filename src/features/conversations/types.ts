@@ -56,6 +56,7 @@ export type ConversationDetail = ConversationListItem & {
 
 export type ConversationsPageData = {
   canManage: boolean;
+  canUseHumanHandoff: boolean;
   conversations: ConversationListItem[];
   filter: ConversationFilter;
   loadError?: string;

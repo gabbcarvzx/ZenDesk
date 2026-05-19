@@ -30,6 +30,7 @@ Obrigatorias apenas quando a feature estiver ativa:
 - WhatsApp: `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`
 - WhatsApp opcional: `WHATSAPP_GRAPH_API_VERSION`
 - Mercado Pago Pix: `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`
+- Rate limit distribuido: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 
 Regra de produto: a falta de variaveis de integracao nao deve quebrar o app inteiro. Rotas da integracao retornam erro controlado (`503`) ate que a feature esteja configurada.
 
@@ -48,7 +49,7 @@ Regra de produto: a falta de variaveis de integracao nao deve quebrar o app inte
 - [x] WhatsApp valida token de verificacao e assinatura HMAC.
 - [x] Mercado Pago valida assinatura do webhook.
 - [x] Webhooks usam limite de tamanho de payload.
-- [x] Webhooks possuem rate limiting basico.
+- [x] Webhooks possuem rate limiting preparado para Upstash Redis, com fallback em memoria.
 - [x] Logs nao registram tokens, secrets ou payload bruto.
 - [ ] Configurar retries/fila para processamento pesado.
 - [ ] Configurar monitoramento de falhas de webhook.
@@ -74,8 +75,9 @@ Regra de produto: a falta de variaveis de integracao nao deve quebrar o app inte
 - [x] Modelo inicial de `payments`.
 - [x] Integracao Pix inicial com Mercado Pago.
 - [x] Webhook atualiza status local com idempotencia.
-- [ ] Modelo de plano/assinatura e bloqueio por status ainda deve ser implementado.
-- [ ] Limites por plano devem ser aplicados antes de chamadas de IA e envio WhatsApp.
+- [x] Policy central de plano em `src/lib/billing/policy.ts`.
+- [x] Bloqueio por plano para CRM manual, agendamentos, Pix, handoff humano e limite mensal de respostas IA.
+- [ ] Status de assinatura/trial/bloqueado ainda deve ser persistido antes de clientes pagantes em escala.
 
 ## Smoke tests apos deploy
 

@@ -2,6 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { ManualPaymentProvider } from "@/lib/billing/payment-provider";
+import {
+  BillingPolicyError,
+  assertCanUseFeature,
+  getBillingPolicyMessage,
+} from "@/lib/billing/policy";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireOrganizationRole } from "@/lib/tenant.server";
@@ -39,6 +44,13 @@ export async function createManualPaymentAction(
     const supabase = await createSupabaseServerClient();
     const values = parsed.data;
     const provider = new ManualPaymentProvider();
+
+    await assertCanUseFeature({
+      feature: "pixPayments",
+      organizationId: profile.organizationId,
+      planSlug: profile.organization.planSlug,
+      supabase,
+    });
 
     await assertCustomerBelongsToTenant(
       supabase,
@@ -116,7 +128,14 @@ async function savePaymentMutation(
       message,
       status: "success",
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof BillingPolicyError) {
+      return {
+        message: getBillingPolicyMessage(error),
+        status: "error",
+      };
+    }
+
     return {
       message:
         "Nao foi possivel salvar a cobranca. Verifique cliente, conversa, valor e permissao.",

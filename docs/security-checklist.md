@@ -19,7 +19,9 @@ Este checklist cobre os controles minimos para operar o SaaS sem vazamento entre
 - [x] Rotas e Server Actions de produto resolvem tenant no servidor via `requireOrganizationRole` ou `requireCurrentOrganizationId`.
 - [x] Operacoes administrativas usam papeis (`owner`, `admin`, `agent`) no servidor.
 - [x] `SUPABASE_SERVICE_ROLE_KEY` e usada apenas em Route Handlers server-side de webhook.
-- [ ] Bloqueio por plano/status comercial ainda deve ser acoplado ao middleware de tenant antes da comercializacao.
+- [x] Bloqueio por plano comercial foi centralizado em `src/lib/billing/policy.ts`.
+- [x] `organizations.plan_slug` possui trigger contra autopromocao client-side de plano.
+- [ ] Status de assinatura/trial/bloqueado ainda deve ser acoplado ao tenant antes da comercializacao ampla.
 
 ## Webhooks
 
@@ -40,7 +42,8 @@ Este checklist cobre os controles minimos para operar o SaaS sem vazamento entre
   - `POST /api/webhooks/mercadopago`
   - `POST /api/payments/mercadopago/create`
 - [x] Identificadores de cliente sao hasheados antes de serem usados como chave interna.
-- [ ] O rate limit atual e em memoria por instancia. Para producao com multiplas instancias, usar Vercel Firewall/WAF, Upstash Redis ou outro limitador distribuido.
+- [x] O rate limit usa Upstash Redis quando `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` existem.
+- [ ] Sem Upstash, o fallback em memoria protege apenas a instancia atual; configurar Redis/Vercel Firewall antes de trafego real.
 
 ## Logs e dados sensiveis
 
@@ -56,11 +59,13 @@ Este checklist cobre os controles minimos para operar o SaaS sem vazamento entre
 - [x] Tools internas validam `organization_id` antes de criar agendamento, pagamento, handoff ou atualizar cliente.
 - [x] Cobranca e agendamento exigem confirmacao clara antes de executar acao.
 - [x] Prompt instrui a IA a nao revelar instrucoes internas e a pedir humano quando nao souber.
+- [x] Respostas IA sao bloqueadas ao exceder o limite mensal do plano.
 - [ ] Registrar uso de tokens/custo por organizacao antes de planos pagos em larga escala.
 
 ## Pagamentos
 
 - [x] Criacao Pix exige usuario autenticado com papel `owner` ou `admin`.
+- [x] Criacao Pix exige plano Pro ou Business pela policy central.
 - [x] Criacao Pix usa idempotency key local e no provedor.
 - [x] Webhook consulta o pagamento real no Mercado Pago antes de atualizar status local.
 - [x] Pagamentos sao atualizados com filtro por `organization_id`.

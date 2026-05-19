@@ -1,4 +1,5 @@
 import { isSupabaseConfigured } from "@/lib/env";
+import { checkFeatureAccess } from "@/lib/billing/policy";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentTenantProfile } from "@/lib/tenant.server";
 import { mapPaymentStatusFromRow } from "@/features/payments/schema";
@@ -63,6 +64,10 @@ export async function getPaymentsPageData(): Promise<PaymentsPageData> {
     }
 
     const supabase = await createSupabaseServerClient();
+    const canManage = checkFeatureAccess({
+      feature: "pixPayments",
+      planSlug: profile.organization.planSlug,
+    }).allowed;
     const [paymentRows, customers, conversations] = await Promise.all([
       getPaymentRows(supabase, profile.organizationId),
       getCustomerOptions(supabase, profile.organizationId),
@@ -78,7 +83,7 @@ export async function getPaymentsPageData(): Promise<PaymentsPageData> {
     ]);
 
     return {
-      canManage: true,
+      canManage,
       conversations,
       customers,
       payments: paymentRows.map((row) => ({

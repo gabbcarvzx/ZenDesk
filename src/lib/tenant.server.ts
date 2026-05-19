@@ -1,4 +1,5 @@
 import type { User } from "@supabase/supabase-js";
+import { normalizeBillingPlanSlug } from "@/lib/billing/policy";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type {
   ActiveOrganization,
@@ -10,6 +11,7 @@ import type {
 type ProfileOrganizationRow = {
   id: string;
   name: string;
+  plan_slug: string | null;
   slug: string;
   status: OrganizationStatus;
 };
@@ -87,7 +89,7 @@ export async function getCurrentTenantProfile(): Promise<CurrentTenantProfile | 
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id,user_id,organization_id,full_name,role,status,organizations:organization_id(id,name,slug,status)",
+      "id,user_id,organization_id,full_name,role,status,organizations:organization_id(id,name,slug,plan_slug,status)",
     )
     .eq("user_id", user.id)
     .eq("status", "active")
@@ -112,6 +114,7 @@ export async function getCurrentTenantProfile(): Promise<CurrentTenantProfile | 
     organization: {
       id: organization.id,
       name: organization.name,
+      planSlug: normalizeBillingPlanSlug(organization.plan_slug),
       role: profile.role,
       slug: organization.slug,
       status: organization.status,

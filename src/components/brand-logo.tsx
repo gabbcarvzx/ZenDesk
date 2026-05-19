@@ -12,8 +12,8 @@ export function BrandLogo() {
       </span>
       <span className="flex flex-col leading-none">
         <span className="text-base font-semibold text-foreground">{appConfig.name}</span>
-        <span className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-muted">
-          SaaS B2B
+        <span className="mt-1 text-xs font-medium uppercase text-muted">
+          WhatsApp IA
         </span>
       </span>
     </Link>

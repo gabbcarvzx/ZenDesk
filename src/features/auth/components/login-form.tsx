@@ -1,9 +1,20 @@
+"use client";
+
+import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
+import { loginAction, type AuthActionState } from "@/features/auth/actions";
+
+const initialState: AuthActionState = {
+  message: null,
+  status: "idle",
+};
 
 export function LoginForm() {
+  const [state, formAction, isPending] = useActionState(loginAction, initialState);
+
   return (
-    <form className="space-y-4">
+    <form action={formAction} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="email">E-mail</Label>
         <Input
@@ -24,8 +35,19 @@ export function LoginForm() {
           type="password"
         />
       </div>
-      <Button className="w-full" type="submit">
-        Entrar
+      {state.message ? (
+        <p
+          className={
+            state.status === "error"
+              ? "text-sm leading-6 text-danger"
+              : "text-sm leading-6 text-primary"
+          }
+        >
+          {state.message}
+        </p>
+      ) : null}
+      <Button className="w-full" disabled={isPending} type="submit">
+        {isPending ? "Entrando..." : "Entrar"}
       </Button>
     </form>
   );

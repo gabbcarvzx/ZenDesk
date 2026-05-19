@@ -1,4 +1,5 @@
 import { isSupabaseConfigured } from "@/lib/env";
+import { checkFeatureAccess } from "@/lib/billing/policy";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentTenantProfile } from "@/lib/tenant.server";
 import { parseConversationFilter } from "@/features/conversations/schema";
@@ -92,6 +93,10 @@ export async function getConversationsPageData({
     }
 
     const supabase = await createSupabaseServerClient();
+    const canUseHumanHandoff = checkFeatureAccess({
+      feature: "humanHandoff",
+      planSlug: profile.organization.planSlug,
+    }).allowed;
     const conversations = await getConversationList({
       filter,
       organizationId: profile.organizationId,
@@ -111,6 +116,7 @@ export async function getConversationsPageData({
 
     return {
       canManage: true,
+      canUseHumanHandoff,
       conversations,
       filter,
       selectedConversation,
@@ -401,6 +407,7 @@ function emptyConversationsPageData({
 }): ConversationsPageData {
   return {
     canManage: false,
+    canUseHumanHandoff: false,
     conversations: [],
     filter,
     loadError,

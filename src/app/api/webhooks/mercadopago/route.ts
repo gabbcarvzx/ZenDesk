@@ -9,8 +9,8 @@ import {
   verifyMercadoPagoWebhookSignature,
 } from "@/lib/billing/mercadopago";
 import {
-  applyRateLimit,
   buildRateLimitKey,
+  enforceRateLimit,
   getRateLimitHeaders,
 } from "@/lib/rate-limit";
 import {
@@ -35,7 +35,7 @@ type PaymentRow = {
 };
 
 export async function POST(request: NextRequest) {
-  const rateLimit = applyRateLimit({
+  const rateLimit = await enforceRateLimit({
     key: buildRateLimitKey("mercadopago-webhook:post", request),
     limit: WEBHOOK_POST_RATE_LIMIT,
     windowMs: WEBHOOK_RATE_LIMIT_WINDOW_MS,

@@ -2,6 +2,6 @@ export const appConfig = {
   name: "Central IA",
   internalCodename: "Zendesk",
   description:
-    "SaaS multi-tenant para pequenos negocios operarem atendimento, vendas, agendamento, cobranca e recuperacao de clientes por WhatsApp com IA.",
+    "SaaS para pequenos negócios transformarem o WhatsApp em atendimento, agenda, cobrança e vendas com IA.",
   supportEmail: "suporte@example.com",
 } as const;

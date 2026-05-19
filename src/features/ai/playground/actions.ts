@@ -1,6 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import {
+  BillingPolicyError,
+  assertWithinMonthlyAiMessageLimit,
+  getBillingPolicyMessage,
+} from "@/lib/billing/policy";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireOrganizationRole } from "@/lib/tenant.server";
@@ -81,6 +86,12 @@ export async function generatePlaygroundResponseAction(
       supabase,
     });
 
+    await assertWithinMonthlyAiMessageLimit({
+      organizationId: profile.organizationId,
+      planSlug: profile.organization.planSlug,
+      supabase,
+    });
+
     const aiResult = await respondToCustomer({
       business: context.business,
       conversationHistory: history,
@@ -127,7 +138,15 @@ export async function generatePlaygroundResponseAction(
       selectedFakeConversationId,
       status: "success",
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof BillingPolicyError) {
+      return {
+        message: getBillingPolicyMessage(error),
+        selectedFakeConversationId,
+        status: "error",
+      };
+    }
+
     return {
       message:
         "Nao foi possivel gerar a resposta. Verifique permissao, contexto do negocio e credenciais da IA.",

@@ -125,6 +125,8 @@ create table if not exists public.organizations (
   id uuid primary key default gen_random_uuid(),
   name text not null check (char_length(trim(name)) >= 2),
   slug text not null check (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
+  plan_slug text not null default 'starter'
+    check (plan_slug in ('starter', 'pro', 'business')),
   status public.organization_status not null default 'active',
   timezone text not null default 'America/Sao_Paulo',
   owner_user_id uuid not null references auth.users (id) on delete restrict,
@@ -140,6 +142,9 @@ create index if not exists organizations_owner_user_id_idx
 
 create index if not exists organizations_status_idx
   on public.organizations (status);
+
+create index if not exists organizations_plan_slug_idx
+  on public.organizations (plan_slug);
 
 create table if not exists public.profiles (
   id uuid primary key default gen_random_uuid(),
@@ -456,6 +461,22 @@ begin
 end;
 $$;
 
+create or replace function public.prevent_organization_plan_self_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+begin
+  if old.plan_slug is distinct from new.plan_slug
+    and coalesce(auth.role(), '') <> 'service_role' then
+    raise exception 'plan_slug cannot be changed through client updates';
+  end if;
+
+  return new;
+end;
+$$;
+
 create or replace function public.prevent_profile_identity_change()
 returns trigger
 language plpgsql
@@ -555,6 +576,11 @@ drop trigger if exists organizations_prevent_owner_change on public.organization
 create trigger organizations_prevent_owner_change
   before update on public.organizations
   for each row execute function public.prevent_organization_owner_change();
+
+drop trigger if exists organizations_prevent_plan_self_change on public.organizations;
+create trigger organizations_prevent_plan_self_change
+  before update of plan_slug on public.organizations
+  for each row execute function public.prevent_organization_plan_self_change();
 
 drop trigger if exists profiles_prevent_identity_change on public.profiles;
 create trigger profiles_prevent_identity_change

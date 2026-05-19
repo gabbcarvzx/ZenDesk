@@ -35,6 +35,9 @@ const requiredFunctions = [
 ];
 
 const failures = [];
+
+const requiredOrganizationColumns = ["plan_slug"];
+
 const requiredBusinessSettingsColumns = [
   "business_name",
   "industry",
@@ -124,6 +127,10 @@ for (const table of tenantScopedTables) {
   );
 }
 
+for (const column of requiredOrganizationColumns) {
+  expect(hasColumn("organizations", column), `organizations must include ${column}`);
+}
+
 expect(
   /user_id uuid not null unique/i.test(tableBlock("profiles")),
   "profiles.user_id must be unique so each user belongs to one organization",
@@ -165,6 +172,12 @@ expect(
 expect(
   /business_settings_whatsapp_phone_number_unique_idx/i.test(sql),
   "business_settings.whatsapp_phone_number_id must be unique to prevent webhook tenant ambiguity",
+);
+
+expect(
+  /function public\.prevent_organization_plan_self_change/i.test(sql) &&
+    /organizations_prevent_plan_self_change/i.test(sql),
+  "organizations.plan_slug must be protected against client-side self-upgrade",
 );
 
 expect(

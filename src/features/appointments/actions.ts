@@ -1,6 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import {
+  BillingPolicyError,
+  assertCanUseFeature,
+  getBillingPolicyMessage,
+} from "@/lib/billing/policy";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createAppointment } from "@/lib/appointments/create-appointment";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -70,6 +75,13 @@ export async function updateAppointmentAction(
     const values = parsed.data;
     const serviceId = values.serviceId || null;
 
+    await assertCanUseFeature({
+      feature: "appointments",
+      organizationId: profile.organizationId,
+      planSlug: profile.organization.planSlug,
+      supabase,
+    });
+
     await assertCustomerBelongsToTenant(supabase, profile.organizationId, values.customerId);
 
     if (serviceId) {
@@ -114,6 +126,13 @@ export async function cancelAppointmentAction(formData: FormData): Promise<void>
     const profile = await requireOrganizationRole(["owner", "admin", "agent"]);
     const supabase = await createSupabaseServerClient();
 
+    await assertCanUseFeature({
+      feature: "appointments",
+      organizationId: profile.organizationId,
+      planSlug: profile.organization.planSlug,
+      supabase,
+    });
+
     await supabase
       .from("appointments")
       .update({ status: "canceled" })
@@ -144,7 +163,14 @@ async function saveAppointmentMutation(
       message,
       status: "success",
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof BillingPolicyError) {
+      return {
+        message: getBillingPolicyMessage(error),
+        status: "error",
+      };
+    }
+
     return {
       message:
         "Nao foi possivel salvar o agendamento. Verifique cliente, servico, horario e permissao.",

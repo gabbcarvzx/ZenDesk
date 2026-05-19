@@ -9,8 +9,12 @@ import type {
   AiServiceContext,
 } from "@/lib/ai/types";
 import {
-  applyRateLimit,
+  BillingPolicyError,
+  assertWithinMonthlyAiMessageLimit,
+} from "@/lib/billing/policy";
+import {
   buildRateLimitKey,
+  enforceRateLimit,
   getRateLimitHeaders,
 } from "@/lib/rate-limit";
 import {
@@ -33,6 +37,8 @@ const WEBHOOK_GET_RATE_LIMIT = 60;
 const WEBHOOK_POST_RATE_LIMIT = 120;
 const WEBHOOK_RATE_LIMIT_WINDOW_MS = 60_000;
 const HISTORY_LIMIT = 16;
+const BILLING_LIMIT_HANDOFF_MESSAGE =
+  "Vou chamar uma pessoa da equipe para assumir este atendimento e te responder com seguranca.";
 
 type SupabaseServiceRoleClient = ReturnType<typeof createSupabaseServiceRoleClient>;
 
@@ -105,7 +111,7 @@ type KnowledgeBaseRow = {
 };
 
 export async function GET(request: NextRequest) {
-  const rateLimit = applyRateLimit({
+  const rateLimit = await enforceRateLimit({
     key: buildRateLimitKey("whatsapp-webhook:get", request),
     limit: WEBHOOK_GET_RATE_LIMIT,
     windowMs: WEBHOOK_RATE_LIMIT_WINDOW_MS,
@@ -156,7 +162,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const rateLimit = applyRateLimit({
+  const rateLimit = await enforceRateLimit({
     key: buildRateLimitKey("whatsapp-webhook:post", request),
     limit: WEBHOOK_POST_RATE_LIMIT,
     windowMs: WEBHOOK_RATE_LIMIT_WINDOW_MS,
@@ -329,6 +335,75 @@ async function processInboundMessage({
       });
 
       return "waiting_human";
+    }
+
+    try {
+      await assertWithinMonthlyAiMessageLimit({
+        organizationId: settings.organization_id,
+        supabase,
+      });
+    } catch (error) {
+      if (!(error instanceof BillingPolicyError)) {
+        throw error;
+      }
+
+      const outboundMessageId = await saveSystemMessage({
+        body: BILLING_LIMIT_HANDOFF_MESSAGE,
+        conversationId: conversation.id,
+        customerId: customer.id,
+        inboundMessageId,
+        organizationId: settings.organization_id,
+        responseStatus: "billing_limit_exceeded",
+        supabase,
+      });
+
+      try {
+        const sendResult = await sendWhatsAppTextMessage({
+          phoneNumberId: message.phoneNumberId,
+          replyToMessageId: message.messageId,
+          text: BILLING_LIMIT_HANDOFF_MESSAGE,
+          to: message.from,
+        });
+
+        await updateAiMessageAfterSend({
+          externalMessageId: sendResult.messageId,
+          messageId: outboundMessageId,
+          organizationId: settings.organization_id,
+          status: "sent",
+          supabase,
+        });
+      } catch (sendError) {
+        await updateAiMessageAfterSend({
+          messageId: outboundMessageId,
+          organizationId: settings.organization_id,
+          status: "failed",
+          supabase,
+        });
+        logWhatsAppSendError(sendError, {
+          conversationId: conversation.id,
+          organizationId: settings.organization_id,
+        });
+      }
+
+      await ensureOpenHandoff({
+        conversationId: conversation.id,
+        customerId: customer.id,
+        organizationId: settings.organization_id,
+        requestedByMessageId: inboundMessageId,
+        supabase,
+      });
+      await touchConversation({
+        conversationId: conversation.id,
+        organizationId: settings.organization_id,
+        status: "waiting_human",
+        supabase,
+      });
+      logWarn("webhook_ai_billing_limit_exceeded", {
+        conversationId: conversation.id,
+        organizationId: settings.organization_id,
+      });
+
+      return "billing_limited";
     }
 
     const aiContext = await loadAiContext({
@@ -731,6 +806,49 @@ async function saveAiMessage({
       },
       organization_id: organizationId,
       sender_type: "ai",
+      status: "draft",
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data as { id: string }).id;
+}
+
+async function saveSystemMessage({
+  body,
+  conversationId,
+  customerId,
+  inboundMessageId,
+  organizationId,
+  responseStatus,
+  supabase,
+}: {
+  body: string;
+  conversationId: string;
+  customerId: string;
+  inboundMessageId: string;
+  organizationId: string;
+  responseStatus: string;
+  supabase: SupabaseServiceRoleClient;
+}) {
+  const { data, error } = await supabase
+    .from("messages")
+    .insert({
+      body,
+      conversation_id: conversationId,
+      customer_id: customerId,
+      direction: "outbound",
+      metadata: {
+        inboundMessageId,
+        responseStatus,
+        source: "whatsapp_cloud_api_billing_guard",
+      },
+      organization_id: organizationId,
+      sender_type: "system",
       status: "draft",
     })
     .select("id")

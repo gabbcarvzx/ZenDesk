@@ -21,7 +21,7 @@ export function PublicHeader() {
             Entrar
           </ButtonLink>
           <ButtonLink href={routes.register} size="sm">
-            Criar conta
+            Teste grátis
           </ButtonLink>
         </div>
       </div>
