@@ -186,6 +186,23 @@ expect(
   "payments must enforce Mercado Pago idempotency per organization",
 );
 
+expect(
+  /onboarding_progress_current_step_check/i.test(sql) &&
+    /onboarding_progress_completed_steps_check/i.test(sql),
+  "onboarding_progress must constrain current_step and completed_steps to known onboarding steps",
+);
+
+expect(
+  /onboarding_progress_payload_object_check/i.test(sql) &&
+    /onboarding_progress_payload_size_check/i.test(sql),
+  "onboarding_progress payload must be a bounded JSON object",
+);
+
+expect(
+  /revoke all on table public\.onboarding_progress from anon;/i.test(sql),
+  "onboarding_progress must explicitly revoke anon table access",
+);
+
 for (const fn of requiredFunctions) {
   expect(
     sql.includes(`function public.${fn}`),

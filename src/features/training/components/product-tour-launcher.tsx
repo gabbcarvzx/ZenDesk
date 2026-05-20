@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { ChevronLeft, ChevronRight, PlayCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { routeTourSteps } from "@/features/training/data";
-import type { TourArea } from "@/features/training/types";
+import type { TourArea, TourStep } from "@/features/training/types";
 
 type HighlightRect = {
   height: number;
@@ -18,6 +18,21 @@ export function ProductTourLauncher() {
   const pathname = usePathname();
   const area = getTourArea(pathname);
   const steps = area ? routeTourSteps[area] : [];
+
+  if (!area || steps.length === 0) {
+    return null;
+  }
+
+  return <ProductTourState area={area} key={area} steps={steps} />;
+}
+
+function ProductTourState({
+  area,
+  steps,
+}: {
+  area: TourArea;
+  steps: readonly TourStep[];
+}) {
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState<HighlightRect | null>(null);
@@ -63,10 +78,6 @@ export function ProductTourLauncher() {
   }, [currentStep, open]);
 
   const title = useMemo(() => getTourAreaTitle(area), [area]);
-
-  if (!area || steps.length === 0) {
-    return null;
-  }
 
   return (
     <>

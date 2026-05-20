@@ -6,7 +6,7 @@ import { isSupabaseConfigured } from "@/lib/env";
 import { routes } from "@/lib/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireOrganizationRole } from "@/lib/tenant.server";
-import { getNextOnboardingStepId, getOnboardingStep } from "@/features/training/data";
+import { getOnboardingStep, onboardingSteps } from "@/features/training/data";
 import {
   emptyOnboardingProgress,
   getOnboardingProgressByOrganization,
@@ -40,6 +40,13 @@ const onboardingStepSchema = z.enum([
   "ai-test",
   "finish",
 ]);
+
+class OnboardingPersistenceError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "OnboardingPersistenceError";
+  }
+}
 
 const onboardingSchemas = {
   "ai": z.object({
@@ -177,11 +184,19 @@ export async function saveOnboardingStepAction(
       supabase,
     });
     const completedSteps = addCompletedStep(currentProgress.completedSteps, stepId);
-    const nextStep = getNextOnboardingStepId(stepId);
+    const nextStep = getNextIncompleteStepId(completedSteps);
     const completedAt = stepId === "finish" ? new Date().toISOString() : currentProgress.completedAt;
     const payload = normalizePayloadForStorage({
       ...currentProgress.payload,
       ...parsedPayload.data,
+    });
+
+    await syncBusinessSettingsFromOnboarding({
+      organizationId: profile.organizationId,
+      organizationName: profile.organization.name,
+      payload,
+      stepId,
+      supabase,
     });
 
     const { data, error } = await supabase
@@ -207,14 +222,6 @@ export async function saveOnboardingStepAction(
       };
     }
 
-    await syncBusinessSettingsFromOnboarding({
-      organizationId: profile.organizationId,
-      organizationName: profile.organization.name,
-      payload,
-      stepId,
-      supabase,
-    });
-
     const progress = await getOnboardingProgressByOrganization({
       organizationId: profile.organizationId,
       supabase,
@@ -232,10 +239,12 @@ export async function saveOnboardingStepAction(
       progress,
       status: "success",
     };
-  } catch {
+  } catch (error) {
     return {
       message:
-        "Apenas owner ou admin autenticado pode salvar o onboarding da organizacao.",
+        error instanceof OnboardingPersistenceError
+          ? error.message
+          : "Apenas owner ou admin autenticado pode salvar o onboarding da organizacao.",
       progress: previousState.progress ?? emptyOnboardingProgress,
       status: "error",
     };
@@ -251,12 +260,19 @@ export async function toggleDemoModeAction(formData: FormData) {
     const profile = await requireOrganizationRole(["owner", "admin"]);
     const supabase = await createSupabaseServerClient();
     const enabled = getFormString(formData, "enabled") === "true";
+    const progress = await getOnboardingProgressByOrganization({
+      organizationId: profile.organizationId,
+      supabase,
+    });
 
     await supabase.from("onboarding_progress").upsert(
       {
-        current_step: "welcome",
+        completed_at: progress.completedAt,
+        completed_steps: progress.completedSteps,
+        current_step: progress.currentStep,
         demo_mode_enabled: enabled,
         organization_id: profile.organizationId,
+        payload: normalizePayloadForStorage(progress.payload),
       },
       { onConflict: "organization_id" },
     );
@@ -281,6 +297,14 @@ function addCompletedStep(
   stepId: OnboardingStepId,
 ): OnboardingStepId[] {
   return Array.from(new Set([...completedSteps, stepId]));
+}
+
+function getNextIncompleteStepId(
+  completedSteps: readonly OnboardingStepId[],
+): OnboardingStepId {
+  return (
+    onboardingSteps.find((step) => !completedSteps.includes(step.id))?.id ?? "finish"
+  );
 }
 
 function normalizePayloadForStorage(payload: Partial<OnboardingPayload>): OnboardingPayload {
@@ -334,9 +358,15 @@ async function syncBusinessSettingsFromOnboarding({
     whatsapp_phone_number_id: payload.whatsappPhoneNumberId || undefined,
   };
 
-  await supabase.from("business_settings").upsert(row, {
+  const { error } = await supabase.from("business_settings").upsert(row, {
     onConflict: "organization_id",
   });
+
+  if (error) {
+    throw new OnboardingPersistenceError(
+      "Nao foi possivel sincronizar esta etapa com as configuracoes reais da organizacao.",
+    );
+  }
 }
 
 function normalizeOptionalString(value: unknown) {

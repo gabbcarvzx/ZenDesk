@@ -32,6 +32,43 @@ begin
 exception when duplicate_object then null;
 end $$;
 
+do $$
+begin
+  alter table public.onboarding_progress
+    add constraint onboarding_progress_completed_steps_check
+    check (
+      completed_steps <@ array[
+        'welcome',
+        'business',
+        'niche',
+        'hours',
+        'catalog',
+        'ai',
+        'whatsapp',
+        'pix',
+        'ai-test',
+        'finish'
+      ]::text[]
+    );
+exception when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter table public.onboarding_progress
+    add constraint onboarding_progress_payload_object_check
+    check (jsonb_typeof(payload) = 'object');
+exception when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  alter table public.onboarding_progress
+    add constraint onboarding_progress_payload_size_check
+    check (octet_length(payload::text) <= 65536);
+exception when duplicate_object then null;
+end $$;
+
 create index if not exists onboarding_progress_organization_step_idx
   on public.onboarding_progress (organization_id, current_step);
 
@@ -87,4 +124,5 @@ create policy onboarding_progress_delete_owner_same_org
     and public.has_organization_role(array['owner']::public.profile_role[])
   );
 
+revoke all on table public.onboarding_progress from anon;
 grant select, insert, update, delete on table public.onboarding_progress to authenticated;

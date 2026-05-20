@@ -18,7 +18,7 @@ import { onboardingStepIds } from "@/features/training/types";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
-type OnboardingProgressRow = {
+export type OnboardingProgressRow = {
   completed_at: string | null;
   completed_steps: string[] | null;
   current_step: string | null;
@@ -38,7 +38,7 @@ type BusinessSettingsRow = {
   whatsapp_phone_number_id: string | null;
 };
 
-type ReadinessSnapshot = {
+export type ReadinessSnapshot = {
   activeKnowledgeCount: number;
   businessSettings: BusinessSettingsRow | null;
   conversationCount: number;
@@ -300,7 +300,7 @@ async function getActiveKnowledgeCount({
   return count ?? 0;
 }
 
-function buildDeploymentChecklist({
+export function buildDeploymentChecklist({
   planSlug,
   snapshot,
 }: {
@@ -481,7 +481,7 @@ function summarizeChecklist(items: DeploymentChecklistItem[]): DeploymentCheckli
   };
 }
 
-function mapOnboardingProgressRow(row: OnboardingProgressRow): OnboardingProgress {
+export function mapOnboardingProgressRow(row: OnboardingProgressRow): OnboardingProgress {
   return {
     completedAt: row.completed_at,
     completedSteps: normalizeCompletedSteps(row.completed_steps),
